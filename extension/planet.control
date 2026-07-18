@@ -1,0 +1,5 @@
+# PLANET --- per-query carbon accounting inside PostgreSQL
+comment = 'Per-query carbon accounting inside PostgreSQL (PLANET)'
+default_version = '0.2.0'
+module_pathname = '$libdir/planet'
+relocatable = true

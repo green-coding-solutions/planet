@@ -53,3 +53,26 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+# ---- PLANET ---------------------------------------------------------------
+
+# `*.d` above is meant for C prerequisite files, and also matches this
+# directory. Without this negation a fresh clone ships no init scripts and the
+# container comes up with the extension uninstalled.
+!docker/initdb.d/
+
+__pycache__/
+*.pyc
+
+# calibration output: machine-specific, not portable
+sweep*.csv
+sweep*.meta.json
+fidelity.pdf
+fidelity.tex
+
+# your fitted coefficients (the example stays in git)
+config/coefficients.json
+
+# docker compose local overrides
+docker/.env
+docker/planet.local.conf

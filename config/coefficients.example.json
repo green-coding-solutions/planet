@@ -1,0 +1,23 @@
+{
+  "_comment": "Example PLANET coefficients. The four *fit* values come from code/calibration/fit_model.py; the rest are grid + device-datasheet inputs. These illustrative defaults are NOT calibrated for any specific machine.",
+
+  "fitted_offline": {
+    "planet.cpu_active_watts":     15.0,
+    "planet.joules_per_read":      8e-05,
+    "planet.joules_per_write":     1.6e-04,
+    "planet.joules_per_wal_byte":  2e-08
+  },
+
+  "grid_input": {
+    "planet.grid_gco2_per_kwh":    400.0,
+    "_note": "Use your region's average or, better, marginal carbon intensity (e.g. Electricity Maps / WattTime). Can be updated live."
+  },
+
+  "device_datasheet_input": {
+    "planet.embodied_gco2_per_byte": 1.5e-08,
+    "planet.idle_watts_per_byte":    2.5e-12,
+    "_note": "1.5e-8 gCO2e/byte ~= 15 gCO2e/GB embodied (enterprise SSD); 2.5e-12 W/byte ~= 5 W idle over a 2 TB device. Adjust per your storage media (HDD vs SSD vs NVMe)."
+  },
+
+  "apply": "SELECT format('ALTER SYSTEM SET %s = %s;', key, value) FROM (VALUES ...) -- or just paste the SET statements printed by fit_model.py"
+}

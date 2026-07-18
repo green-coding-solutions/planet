@@ -1,0 +1,61 @@
+name: planet-pg
+
+# A single PostgreSQL 18 server with the planet extension installed and, if you
+# have calibrated, your coefficients applied. Published on loopback only so you
+# can reach it from the host with psql, pgbench, or your application.
+#
+# The project name and the volume below are deliberately specific. Compose
+# derives volume names from the project name, so a bare `planet` would produce
+# `planet_pgdata` --- a name generic enough that another compose project on the
+# same machine can claim the same volume. The failure is quiet: the server finds
+# an initialized data directory, skips initdb.d entirely, and comes up with the
+# extension missing and someone else's databases mounted. Worse, `make clean`
+# here would then delete their data.
+
+services:
+  db:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: planet-pg:18.4
+    # Parallel workers allocate their tuple queues in /dev/shm. Docker's default
+    # 64 MB makes multi-worker plans die with "could not resize shared memory
+    # segment", which looks like a planner result and is not.
+    shm_size: 2gb
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-planet}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      # Change this. It is a development default, and the port below is
+      # published (on loopback, but published).
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-planet}
+    ports:
+      # Loopback only. Do not widen this to 0.0.0.0 without also giving the
+      # server a real password and an hba policy to match.
+      - "127.0.0.1:${PGPORT:-5432}:5432"
+    volumes:
+      - planet-pgdata:/var/lib/postgresql   # PG18: PGDATA is .../18/docker
+      - ../config:/etc/planet:ro            # coefficients.json, if calibrated
+      - ./planet.conf:/etc/postgresql/planet.conf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-planet}"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    # ---- RAPL / energy: OPT-IN, and only needed to calibrate IN HERE --------
+    # The normal path is to calibrate on the host (see ../calibration) and mount
+    # the resulting coefficients.json. If you would rather run the sweep inside
+    # the container, it needs the energy counter, and Docker masks
+    # /sys/devices/virtual/powercap (runc's mitigation for CVE-2020-8694
+    # "PLATYPUS": a high-resolution energy counter is a side channel against
+    # constant-time crypto). On the host, first:
+    #     sudo chmod a+r /sys/class/powercap/intel-rapl:*/energy_uj
+    # then uncomment:
+    # security_opt:
+    #   - systempaths=unconfined
+
+volumes:
+  # Becomes `planet-pg_planet-pgdata`. Override PLANET_VOLUME in .env to run
+  # several independent instances from this same checkout.
+  planet-pgdata:
+    name: ${PLANET_VOLUME:-planet-pg_planet-pgdata}
